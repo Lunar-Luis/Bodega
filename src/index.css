@@ -1,0 +1,119 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  body {
+    background: #F1F5F9;
+    color: #111827;
+    overscroll-behavior: none;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  input, select, textarea, button {
+    @apply text-base;
+  }
+
+  ::selection {
+    background: rgba(124, 58, 237, 0.15);
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply font-bold py-3 px-6 rounded-xl min-h-touch
+           active:scale-[0.97] transition-all duration-100
+           disabled:opacity-50 disabled:cursor-not-allowed
+           w-full text-center;
+    background: #7C3AED;
+    color: white;
+  }
+
+  .btn-primary:active {
+    background: #6D28D9;
+  }
+
+  .btn-secondary {
+    @apply font-bold py-3 px-6 rounded-xl min-h-touch
+           active:scale-[0.97] transition-all duration-100
+           w-full text-center;
+    background: #E2E8F0;
+    color: #374151;
+  }
+
+  .btn-secondary:active {
+    background: #CBD5E1;
+  }
+
+  .card-producto {
+    @apply bg-white rounded-2xl flex flex-col items-stretch
+           border-2 cursor-pointer select-none relative
+           transition-all duration-150 text-slate-800;
+    border-color: #CBD5E1;
+  }
+
+  .card-producto:active {
+    border-color: #7C3AED;
+  }
+
+  .card-producto:hover {
+    border-color: #7C3AED;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    transform: translateY(-2px);
+  }
+
+  .card-producto-seleccionado {
+    @apply card-producto;
+    border-color: #7C3AED;
+    background: #F5F3FF;
+  }
+
+  .card-producto-seleccionado:hover {
+    border-color: #7C3AED;
+    box-shadow: 0 3px 12px rgba(124, 58, 237, 0.12);
+  }
+
+  .card {
+    @apply bg-white rounded-2xl p-4 text-slate-800;
+    border: 1px solid #CBD5E1;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+
+  .input-base {
+    @apply w-full px-4 py-3 rounded-xl text-slate-900 placeholder-slate-400
+           transition-all duration-100;
+    background: white;
+    border: 1px solid #CBD5E1;
+  }
+
+  .input-base:focus {
+    outline: none;
+    border-color: #7C3AED;
+    box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.15);
+  }
+
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(0, 0, 0, 0.1);
+    border-top-color: #7C3AED;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+}
