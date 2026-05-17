@@ -27,6 +27,7 @@ const UMBRAL_ROJO = 8 * 1024 * 1024;
 export default function Configuracion({
   config,
   productos,
+  ventas,
   onActualizarTasa,
   onActualizarProducto,
   onAgregarProducto,
@@ -85,7 +86,7 @@ export default function Configuracion({
 
   const descargarRespaldo = useCallback(() => {
     if (!window.confirm('Descargar respaldo de datos?')) return;
-    const data = { config, productos, ventas: [] };
+    const data = { config, productos, ventas };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

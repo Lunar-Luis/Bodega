@@ -1,3 +1,5 @@
+import { Venta } from '../types';
+
 const DB_NAME = 'BodegaOnlineDB';
 const DB_VERSION = 2;
 
@@ -84,6 +86,30 @@ export function dbClear(): Promise<void> {
       store.clear();
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
+    });
+  });
+}
+
+export function dbAddVenta(venta: Venta): Promise<void> {
+  return openDB().then((db) => {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('ventas', 'readwrite');
+      const store = tx.objectStore('ventas');
+      store.add(venta);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  });
+}
+
+export function dbGetAllVentas(): Promise<Venta[]> {
+  return openDB().then((db) => {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('ventas', 'readonly');
+      const store = tx.objectStore('ventas');
+      const req = store.getAll();
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
     });
   });
 }

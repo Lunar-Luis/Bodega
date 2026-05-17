@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Producto, Venta, Config, Pagina, CarritoItem, HistorialEntry } from './types';
 import { usePersistedState } from './hooks/usePersistedState';
+import { useVentas } from './hooks/useVentas';
 import { buscarProducto } from './utils/calculos';
 import NavegacionInferior from './components/NavegacionInferior';
 import NuevaVenta from './pages/NuevaVenta';
@@ -45,7 +46,7 @@ function limpiarHistorial(entries: HistorialEntry[]): HistorialEntry[] {
 
 export default function App() {
   const [pagina, setPagina] = useState<Pagina>('venta');
-  const [ventas, setVentas] = usePersistedState<Venta[]>('bodegaonline_ventas', []);
+  const [ventas, addVenta] = useVentas();
   const [config, setConfig] = usePersistedState<Config>('bodegaonline_config', CONFIG_INICIAL);
   const [productos, setProductos] = usePersistedState<Producto[]>('bodegaonline_productos', PRODUCTOS_INICIALES);
   const [historial, setHistorial] = usePersistedState<HistorialEntry[]>('bodegaonline_historial', []);
@@ -91,13 +92,13 @@ export default function App() {
   }, []);
 
   const handleGuardarVenta = useCallback((venta: Venta) => {
-    setVentas((prev) => [venta, ...prev]);
+    addVenta(venta);
     const desc = venta.items.map((i) => {
       const p = buscarProducto(productos, i.productoId);
       return `${p?.nombre || '?'} x${i.cantidad}`;
     }).join(', ');
     agregarHistorial(`Venta registrada: ${desc}`);
-  }, [setVentas, agregarHistorial, productos]);
+  }, [addVenta, agregarHistorial, productos]);
 
   const handleActualizarTasa = useCallback((tasa: number) => {
     setConfig((prev) => ({ ...prev, tasaDolar: tasa, ultimaActualizacion: new Date().toISOString() }));
