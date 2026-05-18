@@ -1,9 +1,15 @@
 import { useState, useCallback, useMemo, useRef } from 'react';
 import { Producto, CarritoItem, MetodoPago, Venta } from '../types';
-import { generarIdVenta, buscarProducto } from '../utils/calculos';
+import { generarIdVenta, buscarProducto, formatearUSD, formatearBs } from '../utils/calculos';
 import ProductCard from '../components/ProductCard';
 import CarritoFlotante from '../components/CarritoFlotante';
 import ModalPago from '../components/ModalPago';
+
+const METODO_LABEL: Record<string, string> = {
+  pago_movil: 'Pago Movil',
+  efectivo_bs: 'Efectivo Bs',
+  efectivo_usd: 'Efectivo $',
+};
 
 interface Props {
   productos: Producto[];
@@ -25,7 +31,7 @@ export default function NuevaVenta({
   onGuardarVenta,
 }: Props) {
   const [mostrarPago, setMostrarPago] = useState(false);
-  const [mensaje, setMensaje] = useState('');
+  const [ultimaVenta, setUltimaVenta] = useState<Venta | null>(null);
   const [busqueda, setBusqueda] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -49,8 +55,7 @@ export default function NuevaVenta({
       onGuardarVenta(venta);
       onVaciarCarrito();
       setMostrarPago(false);
-      setMensaje('Venta registrada correctamente');
-      setTimeout(() => setMensaje(''), 3000);
+      setUltimaVenta(venta);
     },
     [carrito, tasaDolar, onGuardarVenta, onVaciarCarrito, productos]
   );
@@ -74,9 +79,46 @@ export default function NuevaVenta({
         </div>
       </div>
 
-      {mensaje && (
-        <div className="bg-exito/20 border border-exito/30 text-exito text-sm rounded-xl px-4 py-3 mb-4 text-center font-medium">
-          {mensaje}
+      {ultimaVenta && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setUltimaVenta(null)} />
+          <div className="relative bg-white rounded-2xl w-full max-w-sm p-6 shadow-xl animate-pop">
+            <div className="w-16 h-16 bg-exito/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold text-center text-slate-800 mb-4">Venta registrada</h2>
+            <div className="space-y-2.5 mb-5">
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500">Articulos</span>
+                <span className="font-bold text-slate-800">{ultimaVenta.items.reduce((s, i) => s + i.cantidad, 0)}</span>
+              </div>
+              <div className="w-full h-px bg-slate-100" />
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500">Total USD</span>
+                <span className="font-bold text-primary">{formatearUSD(ultimaVenta.totalUSD)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500">Total Bs</span>
+                <span className="font-bold text-primary">{formatearBs(ultimaVenta.totalBs)}</span>
+              </div>
+              <div className="w-full h-px bg-slate-100" />
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500">Metodo de pago</span>
+                <span className="font-bold text-slate-800">{METODO_LABEL[ultimaVenta.metodoPago]}</span>
+              </div>
+              {ultimaVenta.referencia && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Referencia</span>
+                  <span className="font-bold text-slate-800">{ultimaVenta.referencia}</span>
+                </div>
+              )}
+            </div>
+            <button onClick={() => setUltimaVenta(null)} className="btn-primary">
+              Cerrar
+            </button>
+          </div>
         </div>
       )}
 

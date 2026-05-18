@@ -46,12 +46,14 @@ function limpiarHistorial(entries: HistorialEntry[]): HistorialEntry[] {
 
 export default function App() {
   const [pagina, setPagina] = useState<Pagina>('venta');
-  const [ventas, addVenta] = useVentas();
-  const [config, setConfig] = usePersistedState<Config>('bodegaonline_config', CONFIG_INICIAL);
-  const [productos, setProductos] = usePersistedState<Producto[]>('bodegaonline_productos', PRODUCTOS_INICIALES);
-  const [historial, setHistorial] = usePersistedState<HistorialEntry[]>('bodegaonline_historial', []);
+  const [ventas, addVenta, ventasLoaded] = useVentas();
+  const [config, setConfig, configLoaded] = usePersistedState<Config>('bodegaonline_config', CONFIG_INICIAL);
+  const [productos, setProductos, productosLoaded] = usePersistedState<Producto[]>('bodegaonline_productos', PRODUCTOS_INICIALES);
+  const [historial, setHistorial, historialLoaded] = usePersistedState<HistorialEntry[]>('bodegaonline_historial', []);
   const [carrito, setCarrito] = useState<CarritoItem[]>([]);
   const [bannerRespaldo, setBannerRespaldo] = useState(false);
+
+  const todoCargado = ventasLoaded && configLoaded && productosLoaded && historialLoaded;
 
   useEffect(() => {
     setHistorial((prev) => limpiarHistorial(prev));
@@ -149,6 +151,17 @@ export default function App() {
       setBannerRespaldo(false);
     }
   }, [ventas, config, productos]);
+
+  if (!todoCargado) {
+    return (
+      <div className="max-w-lg mx-auto min-h-screen bg-fondo flex items-center justify-center">
+        <div className="text-center">
+          <div className="spinner mx-auto mb-4" style={{ width: 24, height: 24, borderWidth: 3 }} />
+          <p className="text-slate-400 text-sm font-medium">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-lg mx-auto min-h-screen bg-fondo">
