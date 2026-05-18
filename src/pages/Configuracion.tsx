@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Producto, Config, Venta, HistorialEntry } from '../types';
-import { formatearFecha } from '../utils/calculos';
+import { formatearFecha, formatearUSD, formatearBs, ahoraVenezuela } from '../utils/calculos';
 import { useStorageQuota } from '../hooks/useStorageQuota';
 import { comprimirImagen } from '../utils/imagenes';
 
@@ -37,7 +37,9 @@ export default function Configuracion({
   const [tasaInput, setTasaInput] = useState('');
   const [editandoProducto, setEditandoProducto] = useState<Producto | null>(null);
   const [nuevoNombre, setNuevoNombre] = useState('');
-  const [nuevoPrecio, setNuevoPrecio] = useState('');
+  const [nuevoPrecioUSD, setNuevoPrecioUSD] = useState('');
+  const [nuevoPrecioBs, setNuevoPrecioBs] = useState('');
+  const ultimoEditadoNuevo = useRef<'usd' | 'bs' | null>(null);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [comprimiendo, setComprimiendo] = useState(false);
   const [previewImg, setPreviewImg] = useState<string | null>(null);
@@ -91,7 +93,7 @@ export default function Configuracion({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `config-bodegaonline-${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `config-bodegaonline-${ahoraVenezuela().split('T')[0]}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -148,8 +150,8 @@ export default function Configuracion({
       <div className="card">
         <div className="flex items-center justify-between mb-3">
           <p className="text-sm font-medium text-slate-700">Productos ({productos.length})</p>
-          <button
-            onClick={() => { setMostrarFormulario(true); setPreviewImg(null); }}
+              <button
+                onClick={() => { setMostrarFormulario(true); setNuevoPrecioBs(''); setPreviewImg(null); }}
             className="text-xs font-bold bg-primary text-white px-4 py-2 rounded-xl active:bg-primaryDark active:scale-95 transition-all shadow-sm"
           >
             + Nuevo
@@ -174,9 +176,35 @@ export default function Configuracion({
               <label className="text-xs text-slate-400 block mb-1">Nombre del producto</label>
               <input type="text" placeholder="Ej: Refresco 2L" value={nuevoNombre} onChange={(e) => setNuevoNombre(e.target.value)} className="input-base" />
             </div>
-            <div>
-              <label className="text-xs text-slate-400 block mb-1">Precio en USD</label>
-              <input type="text" inputMode="decimal" placeholder="0.00" value={nuevoPrecio} onChange={(e) => setNuevoPrecio(e.target.value.replace(/[^0-9.]/g, ''))} className="input-base" />
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Precio en USD</label>
+                <input type="text" inputMode="decimal" placeholder="0.00" value={nuevoPrecioUSD}
+                  onFocus={() => ultimoEditadoNuevo.current = 'usd'}
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/[^0-9.]/g, '');
+                    setNuevoPrecioUSD(v);
+                    ultimoEditadoNuevo.current = 'usd';
+                    if (config.tasaDolar > 0 && v) {
+                      setNuevoPrecioBs((parseFloat(v) * config.tasaDolar).toFixed(2));
+                    }
+                  }}
+                  className="input-base" />
+              </div>
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Precio en Bs</label>
+                <input type="text" inputMode="decimal" placeholder="0.00" value={nuevoPrecioBs}
+                  onFocus={() => ultimoEditadoNuevo.current = 'bs'}
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/[^0-9.]/g, '');
+                    setNuevoPrecioBs(v);
+                    ultimoEditadoNuevo.current = 'bs';
+                    if (config.tasaDolar > 0 && v) {
+                      setNuevoPrecioUSD((parseFloat(v) / config.tasaDolar).toFixed(2));
+                    }
+                  }}
+                  className="input-base" />
+              </div>
             </div>
             <div>
               <label className="text-xs text-slate-400 block mb-1">Foto (opcional)</label>
@@ -197,16 +225,21 @@ export default function Configuracion({
             <div className="flex gap-2 pt-1">
               <button
                 onClick={() => {
-                  if (!nuevoNombre.trim() || !(parseFloat(nuevoPrecio) > 0)) return;
-                  onAgregarProducto({ id: Date.now(), nombre: nuevoNombre.trim(), precioUSD: parseFloat(nuevoPrecio), activo: true, imagen: previewImg || '' });
-                  setNuevoNombre(''); setNuevoPrecio(''); setPreviewImg(null); setMostrarFormulario(false);
+                  if (!nuevoNombre.trim() || !(parseFloat(nuevoPrecioUSD) > 0)) return;
+                  onAgregarProducto({
+                    id: Date.now(), nombre: nuevoNombre.trim(),
+                    precioUSD: parseFloat(nuevoPrecioUSD),
+                    precioBs: parseFloat(nuevoPrecioBs) || 0,
+                    activo: true, imagen: previewImg || '',
+                  });
+                  setNuevoNombre(''); setNuevoPrecioUSD(''); setNuevoPrecioBs(''); setPreviewImg(null); setMostrarFormulario(false);
                 }}
-                disabled={!nuevoNombre.trim() || !(parseFloat(nuevoPrecio) > 0)}
+                disabled={!nuevoNombre.trim() || !(parseFloat(nuevoPrecioUSD) > 0)}
                 className="bg-primary text-white font-bold py-3 rounded-xl min-h-touch active:bg-primaryDark active:scale-[0.97] transition-all disabled:opacity-50 w-full text-center shadow-sm flex-[2] text-sm"
               >
                 Guardar Producto
               </button>
-              <button onClick={() => { setMostrarFormulario(false); setPreviewImg(null); }} className="bg-slate-200 text-slate-700 font-bold py-3 rounded-xl min-h-touch active:bg-slate-300 active:scale-[0.97] transition-all w-full text-center flex-1 text-sm">
+              <button onClick={() => { setMostrarFormulario(false); setNuevoPrecioBs(''); setPreviewImg(null); }} className="bg-slate-200 text-slate-700 font-bold py-3 rounded-xl min-h-touch active:bg-slate-300 active:scale-[0.97] transition-all w-full text-center flex-1 text-sm">
                 Cancelar
               </button>
             </div>
@@ -228,10 +261,10 @@ export default function Configuracion({
                   {p.imagen ? <img src={p.imagen} alt={p.nombre} className="w-full h-full object-cover" />
                   : <div className="w-full h-full flex items-center justify-center text-lg font-bold text-white" style={{ backgroundColor: '#7C3AED' }}>{p.nombre.charAt(0).toUpperCase()}</div>}
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-slate-800 truncate">{p.nombre}</p>
-                  <p className="text-sm font-bold text-primary">${p.precioUSD.toFixed(2)}</p>
-                </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-slate-800 truncate">{p.nombre}</p>
+                    <p className="text-xs font-bold text-primary/70">{formatearUSD(p.precioUSD)} | {formatearBs(p.precioBs ?? 0)}</p>
+                  </div>
               </button>
               <button onClick={() => onActualizarProducto({ ...p, activo: !p.activo })} className={`relative inline-flex h-7 w-11 items-center rounded-full transition-colors flex-shrink-0 ${p.activo ? 'bg-primary' : 'bg-slate-300'}`}>
                 <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform ${p.activo ? 'translate-x-[22px]' : 'translate-x-[3px]'}`} />
@@ -255,9 +288,31 @@ export default function Configuracion({
                 <label className="text-xs text-slate-500 block mb-1">Nombre</label>
                 <input type="text" value={editandoProducto.nombre} onChange={(e) => setEditandoProducto({ ...editandoProducto, nombre: e.target.value })} className="input-base" />
               </div>
-              <div>
-                <label className="text-xs text-slate-500 block mb-1">Precio USD</label>
-                <input type="text" inputMode="decimal" value={editandoProducto.precioUSD} onChange={(e) => setEditandoProducto({ ...editandoProducto, precioUSD: parseFloat(e.target.value.replace(/[^0-9.]/g, '')) || 0 })} className="input-base" />
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs text-slate-500 block mb-1">Precio USD</label>
+                  <input type="text" inputMode="decimal" value={editandoProducto.precioUSD}
+                    onChange={(e) => {
+                      const v = parseFloat(e.target.value.replace(/[^0-9.]/g, '')) || 0;
+                      setEditandoProducto((prev) => {
+                        if (!prev) return null;
+                        return { ...prev, precioUSD: v, precioBs: config.tasaDolar > 0 ? parseFloat((v * config.tasaDolar).toFixed(2)) : (prev.precioBs ?? 0) };
+                      });
+                    }}
+                    className="input-base" />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-500 block mb-1">Precio Bs</label>
+                  <input type="text" inputMode="decimal" value={editandoProducto.precioBs ?? 0}
+                    onChange={(e) => {
+                      const v = parseFloat(e.target.value.replace(/[^0-9.]/g, '')) || 0;
+                      setEditandoProducto((prev) => {
+                        if (!prev) return null;
+                        return { ...prev, precioBs: v, precioUSD: config.tasaDolar > 0 ? parseFloat((v / config.tasaDolar).toFixed(2)) : (prev.precioUSD ?? 0) };
+                      });
+                    }}
+                    className="input-base" />
+                </div>
               </div>
               <div className="flex gap-2 items-center">
                 <button onClick={() => editFileInputRef.current?.click()} className="bg-slate-200 text-slate-700 font-bold py-3 rounded-xl min-h-touch active:bg-slate-300 active:scale-[0.97] transition-all text-xs flex-1 text-center" disabled={comprimiendo}>{comprimiendo ? 'Comprimiendo...' : 'Cambiar foto'}</button>

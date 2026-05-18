@@ -2,6 +2,7 @@ export interface Producto {
   id: number;
   nombre: string;
   precioUSD: number;
+  precioBs: number;
   imagen?: string;
   activo: boolean;
 }

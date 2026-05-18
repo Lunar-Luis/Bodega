@@ -5,7 +5,6 @@ import { calcularTotalUSD, calcularTotalBs, formatearUSD, formatearBs, buscarPro
 interface Props {
   items: CarritoItem[];
   productos: Producto[];
-  tasaDolar: number;
   onConfirmar: (metodo: MetodoPago, referencia?: string) => void;
   onCerrar: () => void;
 }
@@ -16,13 +15,13 @@ const metodos: { id: MetodoPago; label: string }[] = [
   { id: 'efectivo_bs', label: 'Efectivo Bs' },
 ];
 
-export default function ModalPago({ items, productos, tasaDolar, onConfirmar, onCerrar }: Props) {
+export default function ModalPago({ items, productos, onConfirmar, onCerrar }: Props) {
   const [metodo, setMetodo] = useState<MetodoPago>('pago_movil');
   const [referencia, setReferencia] = useState('');
   const [error, setError] = useState('');
 
   const totalUSD = calcularTotalUSD(items, productos);
-  const totalBs = calcularTotalBs(totalUSD, tasaDolar);
+  const totalBs = calcularTotalBs(items, productos);
 
   const handleConfirmar = () => {
     if (metodo === 'pago_movil') {
@@ -54,9 +53,10 @@ export default function ModalPago({ items, productos, tasaDolar, onConfirmar, on
                   <span className="text-slate-600">
                     {p?.nombre || `#${item.productoId}`} x{item.cantidad}
                   </span>
-                  <span className="text-slate-800 font-medium">
-                    ${((p?.precioUSD || 0) * item.cantidad).toFixed(2)}
-                  </span>
+                  <div className="text-right">
+                    <span className="text-slate-800 font-medium block">${((p?.precioUSD || 0) * item.cantidad).toFixed(2)}</span>
+                    <span className="text-xs text-slate-400">Bs. {((p?.precioBs || 0) * item.cantidad).toFixed(2)}</span>
+                  </div>
                 </div>
               );
             })}

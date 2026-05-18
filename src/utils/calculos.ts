@@ -11,8 +11,11 @@ export function calcularTotalUSD(items: CarritoItem[], productos: Producto[]): n
   }, 0);
 }
 
-export function calcularTotalBs(totalUSD: number, tasaDolar: number): number {
-  return totalUSD * tasaDolar;
+export function calcularTotalBs(items: CarritoItem[], productos: Producto[]): number {
+  return items.reduce((sum, item) => {
+    const p = buscarProducto(productos, item.productoId);
+    return sum + (p ? (p.precioBs ?? 0) * item.cantidad : 0);
+  }, 0);
 }
 
 export function formatearUSD(monto: number): string {
@@ -44,9 +47,33 @@ export function formatearFecha(fechaISO: string): string {
   });
 }
 
+function getPartesVenezuela() {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Caracas',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).formatToParts(new Date());
+  const p = (t: string) => parts.find(x => x.type === t)!.value;
+  return { year: p('year'), month: p('month'), day: p('day'), hour: p('hour'), minute: p('minute'), second: p('second') };
+}
+
+export function ahoraVenezuela(): string {
+  const v = getPartesVenezuela();
+  return `${v.year}-${v.month}-${v.day}T${v.hour}:${v.minute}:${v.second}.000-04:00`;
+}
+
+export function hoyVenezuela(): string {
+  const v = getPartesVenezuela();
+  return `${v.year}-${v.month}-${v.day}`;
+}
+
 export function hoy() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return hoyVenezuela();
 }
 
 export function esVentaDeHoy(venta: Venta): boolean {

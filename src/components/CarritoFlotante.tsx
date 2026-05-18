@@ -4,16 +4,15 @@ import { calcularTotalUSD, calcularTotalBs, formatearUSD, formatearBs } from '..
 interface Props {
   items: CarritoItem[];
   productos: Producto[];
-  tasaDolar: number;
   onAbrirPago: () => void;
   onVaciar: () => void;
 }
 
-export default function CarritoFlotante({ items, productos, tasaDolar, onAbrirPago, onVaciar }: Props) {
+export default function CarritoFlotante({ items, productos, onAbrirPago, onVaciar }: Props) {
   if (items.length === 0) return null;
 
   const totalUSD = calcularTotalUSD(items, productos);
-  const totalBs = calcularTotalBs(totalUSD, tasaDolar);
+  const totalBs = calcularTotalBs(items, productos);
   const totalItems = items.reduce((s, i) => s + i.cantidad, 0);
 
   return (

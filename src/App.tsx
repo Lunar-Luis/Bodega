@@ -1,8 +1,8 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Producto, Venta, Config, Pagina, CarritoItem, HistorialEntry } from './types';
 import { usePersistedState } from './hooks/usePersistedState';
 import { useVentas } from './hooks/useVentas';
-import { buscarProducto } from './utils/calculos';
+import { buscarProducto, ahoraVenezuela } from './utils/calculos';
 import NavegacionInferior from './components/NavegacionInferior';
 import NuevaVenta from './pages/NuevaVenta';
 import VentasDelDia from './pages/VentasDelDia';
@@ -24,10 +24,10 @@ const C = [
 ];
 
 const PRODUCTOS_INICIALES: Producto[] = [
-  { id: 1, nombre: 'Recarga Botellon 5L', precioUSD: 0.50, activo: true, imagen: svgImg('Recarga Botellon 5L', C[0]) },
-  { id: 2, nombre: 'Recarga Botellon 8L', precioUSD: 0.75, activo: true, imagen: svgImg('Recarga Botellon 8L', C[0]) },
-  { id: 3, nombre: 'Botellon Sellado 5L', precioUSD: 1.50, activo: true, imagen: svgImg('Botellon Sellado 5L', C[1]) },
-  { id: 4, nombre: 'Botellon Sellado 8L', precioUSD: 2.00, activo: true, imagen: svgImg('Botellon Sellado 8L', C[1]) },
+  { id: 1, nombre: 'Recarga Botellon 5L', precioUSD: 0.50, precioBs: 0, activo: true, imagen: svgImg('Recarga Botellon 5L', C[0]) },
+  { id: 2, nombre: 'Recarga Botellon 8L', precioUSD: 0.75, precioBs: 0, activo: true, imagen: svgImg('Recarga Botellon 8L', C[0]) },
+  { id: 3, nombre: 'Botellon Sellado 5L', precioUSD: 1.50, precioBs: 0, activo: true, imagen: svgImg('Botellon Sellado 5L', C[1]) },
+  { id: 4, nombre: 'Botellon Sellado 8L', precioUSD: 2.00, precioBs: 0, activo: true, imagen: svgImg('Botellon Sellado 8L', C[1]) },
 ];
 
 const CONFIG_INICIAL: Config = {
@@ -55,13 +55,32 @@ export default function App() {
 
   const todoCargado = ventasLoaded && configLoaded && productosLoaded && historialLoaded;
 
+  const migroProductos = useRef(false);
+
+  useEffect(() => {
+    if (!productosLoaded || migroProductos.current) return;
+    if (config.tasaDolar <= 0) return;
+    let changed = false;
+    const migrados = productos.map((p) => {
+      if (p.precioBs === undefined || p.precioBs === null) {
+        changed = true;
+        return { ...p, precioBs: Math.round(p.precioUSD * config.tasaDolar * 100) / 100 };
+      }
+      return p;
+    });
+    if (changed) {
+      setProductos(migrados);
+    }
+    migroProductos.current = true;
+  }, [productosLoaded, config.tasaDolar]);
+
   useEffect(() => {
     setHistorial((prev) => limpiarHistorial(prev));
   }, []);
 
   const agregarHistorial = useCallback((accion: string) => {
     setHistorial((prev) => {
-      const updated = [...prev, { fecha: new Date().toISOString(), accion }];
+      const updated = [...prev, { fecha: ahoraVenezuela(), accion }];
       return limpiarHistorial(updated);
     });
   }, [setHistorial]);
@@ -103,7 +122,7 @@ export default function App() {
   }, [addVenta, agregarHistorial, productos]);
 
   const handleActualizarTasa = useCallback((tasa: number) => {
-    setConfig((prev) => ({ ...prev, tasaDolar: tasa, ultimaActualizacion: new Date().toISOString() }));
+    setConfig((prev) => ({ ...prev, tasaDolar: tasa, ultimaActualizacion: ahoraVenezuela() }));
     agregarHistorial(`Tasa actualizada: ${tasa}`);
   }, [setConfig, agregarHistorial]);
 
@@ -142,12 +161,12 @@ export default function App() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `respaldo-bodegaonline-${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `respaldo-bodegaonline-${ahoraVenezuela().split('T')[0]}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      localStorage.setItem('bodegaonline_ultimo_respaldo', new Date().toISOString());
+      localStorage.setItem('bodegaonline_ultimo_respaldo', ahoraVenezuela());
       setBannerRespaldo(false);
     }
   }, [ventas, config, productos]);
@@ -175,7 +194,6 @@ export default function App() {
       {pagina === 'venta' && (
         <NuevaVenta
           productos={productos}
-          tasaDolar={config.tasaDolar}
           carrito={carrito}
           onIncrementar={incrementar}
           onDecrementar={decrementar}

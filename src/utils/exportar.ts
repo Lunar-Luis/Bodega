@@ -1,5 +1,5 @@
 import { Venta, Producto } from '../types';
-import { formatearUSD, formatearBs, buscarProducto } from './calculos';
+import { formatearUSD, formatearBs, buscarProducto, ahoraVenezuela } from './calculos';
 
 const metodoPagoLabel: Record<string, string> = {
   pago_movil: 'Pago Movil',
@@ -12,8 +12,9 @@ function nombreProducto(productos: Producto[], id: number): string {
 }
 
 export function descargarRespaldoJSON(ventas: Venta[], config: unknown): void {
+  const vzla = ahoraVenezuela();
   const data = {
-    fechaExportacion: new Date().toISOString(),
+    fechaExportacion: vzla,
     ventas,
     config,
   };
@@ -24,7 +25,7 @@ export function descargarRespaldoJSON(ventas: Venta[], config: unknown): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `respaldo-bodegaonline-${new Date().toISOString().split('T')[0]}.json`;
+  a.download = `respaldo-bodegaonline-${vzla.split('T')[0]}.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

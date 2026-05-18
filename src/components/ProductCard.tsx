@@ -47,8 +47,8 @@ export default function ProductCard({ producto, contador, onIncrement, onDecreme
         <span className="text-sm font-semibold text-center leading-tight px-0.5 line-clamp-2 text-slate-800">
           {producto.nombre}
         </span>
-        <span className="text-xs font-semibold text-primary/70">
-          ${producto.precioUSD.toFixed(2)}
+        <span className="text-[11px] font-semibold text-primary/70 whitespace-nowrap">
+          ${producto.precioUSD.toFixed(2)} | Bs. {(producto.precioBs ?? 0).toFixed(2)}
         </span>
       </button>
 

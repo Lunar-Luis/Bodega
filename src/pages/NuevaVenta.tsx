@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useRef } from 'react';
 import { Producto, CarritoItem, MetodoPago, Venta } from '../types';
-import { generarIdVenta, buscarProducto, formatearUSD, formatearBs } from '../utils/calculos';
+import { generarIdVenta, buscarProducto, formatearUSD, formatearBs, ahoraVenezuela } from '../utils/calculos';
 import ProductCard from '../components/ProductCard';
 import CarritoFlotante from '../components/CarritoFlotante';
 import ModalPago from '../components/ModalPago';
@@ -13,7 +13,6 @@ const METODO_LABEL: Record<string, string> = {
 
 interface Props {
   productos: Producto[];
-  tasaDolar: number;
   carrito: CarritoItem[];
   onIncrementar: (producto: Producto) => void;
   onDecrementar: (producto: Producto) => void;
@@ -23,7 +22,6 @@ interface Props {
 
 export default function NuevaVenta({
   productos,
-  tasaDolar,
   carrito,
   onIncrementar,
   onDecrementar,
@@ -38,14 +36,17 @@ export default function NuevaVenta({
   const handleConfirmarPago = useCallback(
     (metodo: MetodoPago, referencia?: string) => {
       let totalUSD = 0;
+      let totalBs = 0;
       for (const item of carrito) {
         const p = buscarProducto(productos, item.productoId);
-        totalUSD += (p ? p.precioUSD * item.cantidad : 0);
+        if (p) {
+          totalUSD += p.precioUSD * item.cantidad;
+          totalBs += (p.precioBs ?? 0) * item.cantidad;
+        }
       }
-      const totalBs = totalUSD * tasaDolar;
       const venta: Venta = {
         id: generarIdVenta(),
-        fecha: new Date().toISOString(),
+        fecha: ahoraVenezuela(),
         items: [...carrito],
         totalUSD,
         totalBs,
@@ -57,7 +58,7 @@ export default function NuevaVenta({
       setMostrarPago(false);
       setUltimaVenta(venta);
     },
-    [carrito, tasaDolar, onGuardarVenta, onVaciarCarrito, productos]
+    [carrito, onGuardarVenta, onVaciarCarrito, productos]
   );
 
   const productosFiltrados = useMemo(
@@ -169,7 +170,6 @@ export default function NuevaVenta({
       <CarritoFlotante
         items={carrito}
         productos={productos}
-        tasaDolar={tasaDolar}
         onAbrirPago={() => setMostrarPago(true)}
         onVaciar={onVaciarCarrito}
       />
@@ -178,7 +178,6 @@ export default function NuevaVenta({
         <ModalPago
           items={carrito}
           productos={productos}
-          tasaDolar={tasaDolar}
           onConfirmar={handleConfirmarPago}
           onCerrar={() => setMostrarPago(false)}
         />
