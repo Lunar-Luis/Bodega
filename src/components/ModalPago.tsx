@@ -5,7 +5,7 @@ import { calcularTotalUSD, calcularTotalBs, formatearUSD, formatearBs, buscarPro
 interface Props {
   items: CarritoItem[];
   productos: Producto[];
-  onConfirmar: (metodo: MetodoPago, referencia?: string) => void;
+  onConfirmar: (metodo: MetodoPago, referencia?: string) => Promise<void>;
   onCerrar: () => void;
 }
 
@@ -19,20 +19,26 @@ export default function ModalPago({ items, productos, onConfirmar, onCerrar }: P
   const [metodo, setMetodo] = useState<MetodoPago>('pago_movil');
   const [referencia, setReferencia] = useState('');
   const [error, setError] = useState('');
+  const [procesando, setProcesando] = useState(false);
 
   const totalUSD = calcularTotalUSD(items, productos);
   const totalBs = calcularTotalBs(items, productos);
 
-  const handleConfirmar = () => {
+  const handleConfirmar = async () => {
+    if (procesando) return;
+    let ref: string | undefined;
     if (metodo === 'pago_movil') {
-      const ref = referencia.trim();
+      ref = referencia.trim();
       if (!ref || ref.length !== 4 || !/^\d{4}$/.test(ref)) {
         setError('Ingresa los ultimos 4 digitos de la referencia');
         return;
       }
-      onConfirmar(metodo, ref);
-    } else {
-      onConfirmar(metodo);
+    }
+    setProcesando(true);
+    try {
+      await onConfirmar(metodo, ref);
+    } catch {
+      setProcesando(false);
     }
   };
 
@@ -122,8 +128,8 @@ export default function ModalPago({ items, productos, onConfirmar, onCerrar }: P
             <button onClick={onCerrar} className="btn-secondary flex-1">
               Cancelar
             </button>
-            <button onClick={handleConfirmar} className="btn-primary flex-[2]">
-              CONFIRMAR VENTA
+            <button onClick={handleConfirmar} disabled={procesando} className="btn-primary flex-[2] disabled:opacity-50">
+              {procesando ? 'GUARDANDO...' : 'CONFIRMAR VENTA'}
             </button>
           </div>
         </div>

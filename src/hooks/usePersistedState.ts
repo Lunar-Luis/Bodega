@@ -8,6 +8,7 @@ export function usePersistedState<T>(
   const [storedValue, setStoredValue] = useState<T>(initialValue);
   const [loaded, setLoaded] = useState(false);
   const initialized = useRef(false);
+  const primeraEscritura = useRef(true);
 
   useEffect(() => {
     if (initialized.current) return;
@@ -29,22 +30,29 @@ export function usePersistedState<T>(
           const parsed = JSON.parse(item);
           setStoredValue(parsed);
           await dbSetItem(key, item).catch(() => {});
+          localStorage.removeItem(key);
         }
       } catch {}
       setLoaded(true);
     })();
   }, [key]);
 
+  useEffect(() => {
+    if (primeraEscritura.current) {
+      primeraEscritura.current = false;
+      return;
+    }
+    const serialized = JSON.stringify(storedValue);
+    dbSetItem(key, serialized).catch(console.error);
+  }, [key, storedValue]);
+
   const setValue = useCallback(
     (value: T | ((prev: T) => T)) => {
       setStoredValue((prev) => {
-        const nextValue = value instanceof Function ? value(prev) : value;
-        const serialized = JSON.stringify(nextValue);
-        dbSetItem(key, serialized).catch(console.error);
-        return nextValue;
+        return value instanceof Function ? value(prev) : value;
       });
     },
-    [key]
+    []
   );
 
   return [storedValue, setValue, loaded];

@@ -75,8 +75,9 @@ export default function App() {
   }, [productosLoaded, config.tasaDolar]);
 
   useEffect(() => {
+    if (!historialLoaded) return;
     setHistorial((prev) => limpiarHistorial(prev));
-  }, []);
+  }, [historialLoaded]);
 
   const agregarHistorial = useCallback((accion: string) => {
     setHistorial((prev) => {
@@ -112,8 +113,8 @@ export default function App() {
     setCarrito([]);
   }, []);
 
-  const handleGuardarVenta = useCallback((venta: Venta) => {
-    addVenta(venta);
+  const handleGuardarVenta = useCallback(async (venta: Venta) => {
+    await addVenta(venta);
     const desc = venta.items.map((i) => {
       const p = buscarProducto(productos, i.productoId);
       return `${p?.nombre || '?'} x${i.cantidad}`;

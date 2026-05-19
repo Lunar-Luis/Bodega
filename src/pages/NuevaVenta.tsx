@@ -33,32 +33,41 @@ export default function NuevaVenta({
   const [busqueda, setBusqueda] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const [confirmando, setConfirmando] = useState(false);
+
   const handleConfirmarPago = useCallback(
-    (metodo: MetodoPago, referencia?: string) => {
-      let totalUSD = 0;
-      let totalBs = 0;
-      for (const item of carrito) {
-        const p = buscarProducto(productos, item.productoId);
-        if (p) {
-          totalUSD += p.precioUSD * item.cantidad;
-          totalBs += (p.precioBs ?? 0) * item.cantidad;
+    async (metodo: MetodoPago, referencia?: string) => {
+      if (confirmando) return;
+      setConfirmando(true);
+      try {
+        let totalUSD = 0;
+        let totalBs = 0;
+        for (const item of carrito) {
+          const p = buscarProducto(productos, item.productoId);
+          if (p) {
+            totalUSD += p.precioUSD * item.cantidad;
+            totalBs += (p.precioBs ?? 0) * item.cantidad;
+          }
         }
+        const venta: Venta = {
+          id: generarIdVenta(),
+          fecha: ahoraVenezuela(),
+          items: [...carrito],
+          totalUSD,
+          totalBs,
+          metodoPago: metodo,
+          referencia,
+        };
+        await onGuardarVenta(venta);
+        onVaciarCarrito();
+        setMostrarPago(false);
+        setUltimaVenta(venta);
+        setConfirmando(false);
+      } catch {
+        setConfirmando(false);
       }
-      const venta: Venta = {
-        id: generarIdVenta(),
-        fecha: ahoraVenezuela(),
-        items: [...carrito],
-        totalUSD,
-        totalBs,
-        metodoPago: metodo,
-        referencia,
-      };
-      onGuardarVenta(venta);
-      onVaciarCarrito();
-      setMostrarPago(false);
-      setUltimaVenta(venta);
     },
-    [carrito, onGuardarVenta, onVaciarCarrito, productos]
+    [carrito, onGuardarVenta, onVaciarCarrito, productos, confirmando]
   );
 
   const productosFiltrados = useMemo(

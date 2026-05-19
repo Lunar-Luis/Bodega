@@ -2,20 +2,22 @@ import { useState, useEffect, useCallback } from 'react';
 import { Venta } from '../types';
 import { dbGetAllVentas, dbAddVenta } from '../utils/db';
 
-export function useVentas(): [Venta[], (venta: Venta) => void, boolean] {
+export function useVentas(): [Venta[], (venta: Venta) => Promise<void>, boolean] {
   const [ventas, setVentas] = useState<Venta[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    dbGetAllVentas().then((v) => {
-      v.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
-      setVentas(v);
-      setLoaded(true);
-    });
+    dbGetAllVentas()
+      .then((v) => {
+        v.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+        setVentas(v);
+        setLoaded(true);
+      })
+      .catch(() => setLoaded(true));
   }, []);
 
   const addVenta = useCallback((venta: Venta) => {
-    dbAddVenta(venta).then(() => {
+    return dbAddVenta(venta).then(() => {
       setVentas((prev) => [venta, ...prev]);
     });
   }, []);
