@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Venta, Producto } from '../types';
-import { formatearUSD, formatearBs } from '../utils/calculos';
+import { formatearUSD, formatearBs, hoyVenezuela, extraerFechaVzla } from '../utils/calculos';
 import VentaItem from '../components/VentaItem';
 import { exportarPDF } from '../utils/exportar';
 
@@ -11,11 +11,6 @@ interface Props {
 
 const ITEMS_POR_PAGINA = 20;
 
-function hoy() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
 function formatearFechaLocal(fechaStr: string) {
   const [y, m, d] = fechaStr.split('-');
   const f = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
@@ -23,11 +18,11 @@ function formatearFechaLocal(fechaStr: string) {
 }
 
 export default function VentasDelDia({ ventas, productos }: Props) {
-  const [fecha, setFecha] = useState(hoy());
+  const [fecha, setFecha] = useState(hoyVenezuela());
   const [verTodas, setVerTodas] = useState(false);
 
   const ventasFiltradas = useMemo(
-    () => ventas.filter((v) => v.fecha.startsWith(fecha)),
+    () => ventas.filter((v) => extraerFechaVzla(v.fecha) === fecha),
     [ventas, fecha]
   );
 
@@ -55,7 +50,7 @@ export default function VentasDelDia({ ventas, productos }: Props) {
     setVerTodas(false);
   };
 
-  const esHoy = fecha === hoy();
+  const esHoy = fecha === hoyVenezuela();
 
   return (
     <div className="px-4 pt-4 pb-24">
@@ -101,7 +96,7 @@ export default function VentasDelDia({ ventas, productos }: Props) {
           </button>
           {!esHoy && (
             <button
-              onClick={() => { setFecha(hoy()); setVerTodas(false); }}
+              onClick={() => { setFecha(hoyVenezuela()); setVerTodas(false); }}
               className="text-xs font-bold text-accent bg-slate-100 px-3 py-2 rounded-xl active:bg-slate-200 whitespace-nowrap border border-accent/30"
             >
               Hoy
@@ -120,7 +115,7 @@ export default function VentasDelDia({ ventas, productos }: Props) {
           </div>
           <p className="text-slate-400 font-medium">Sin ventas este dia</p>
           {!esHoy && (
-            <button onClick={() => setFecha(hoy())} className="mt-3 text-sm font-bold text-accent">
+            <button onClick={() => setFecha(hoyVenezuela())} className="mt-3 text-sm font-bold text-accent">
               Ver ventas de hoy
             </button>
           )}

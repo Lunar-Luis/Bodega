@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Venta, Producto } from '../types';
-import { formatearUSD, formatearBs } from '../utils/calculos';
+import { formatearUSD, formatearBs, extraerFechaVzla, hoyVenezuela } from '../utils/calculos';
 import VentaItem from '../components/VentaItem';
 import { exportarPDF } from '../utils/exportar';
 
@@ -17,14 +17,11 @@ const NOMBRES_MESES = [
 ];
 
 export default function GananciasMensuales({ ventas, productos }: Props) {
-  const [mesSeleccionado, setMesSeleccionado] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  });
+  const [mesSeleccionado, setMesSeleccionado] = useState(() => hoyVenezuela().substring(0, 7));
   const [verTodas, setVerTodas] = useState(false);
 
   const ventasFiltradas = useMemo(
-    () => ventas.filter((v) => v.fecha.startsWith(mesSeleccionado)),
+    () => ventas.filter((v) => extraerFechaVzla(v.fecha).startsWith(mesSeleccionado)),
     [ventas, mesSeleccionado]
   );
 
@@ -56,8 +53,7 @@ export default function GananciasMensuales({ ventas, productos }: Props) {
     setVerTodas(false);
   };
 
-  const ahora = new Date();
-  const mesActual = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}`;
+  const mesActual = hoyVenezuela().substring(0, 7);
   const esMesActual = mesSeleccionado === mesActual;
 
   return (

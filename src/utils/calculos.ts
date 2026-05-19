@@ -72,12 +72,24 @@ export function hoyVenezuela(): string {
   return `${v.year}-${v.month}-${v.day}`;
 }
 
+export function extraerFechaVzla(fechaISO: string): string {
+  const d = new Date(fechaISO);
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Caracas',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(d);
+  const p = (t: string) => parts.find(x => x.type === t)!.value;
+  return `${p('year')}-${p('month')}-${p('day')}`;
+}
+
 export function hoy() {
   return hoyVenezuela();
 }
 
 export function esVentaDeHoy(venta: Venta): boolean {
-  return venta.fecha.startsWith(hoy());
+  return extraerFechaVzla(venta.fecha) === hoyVenezuela();
 }
 
 export function resumenVentasDelDia(ventas: Venta[], _md?: unknown) {
@@ -93,7 +105,7 @@ export function resumenVentasDelDia(ventas: Venta[], _md?: unknown) {
 }
 
 export function ventasPorFecha(ventas: Venta[], fecha: string): Venta[] {
-  return ventas.filter((v) => v.fecha.startsWith(fecha));
+  return ventas.filter((v) => extraerFechaVzla(v.fecha) === fecha);
 }
 
 export function resumenPorFecha(ventas: Venta[], fecha: string) {
@@ -101,7 +113,7 @@ export function resumenPorFecha(ventas: Venta[], fecha: string) {
   let totalBs = 0;
   const filtradas: Venta[] = [];
   for (const v of ventas) {
-    if (v.fecha.startsWith(fecha)) {
+    if (extraerFechaVzla(v.fecha) === fecha) {
       filtradas.push(v);
       totalUSD += v.totalUSD;
       totalBs += v.totalBs;
@@ -112,7 +124,7 @@ export function resumenPorFecha(ventas: Venta[], fecha: string) {
 
 export function ventasPorMes(ventas: Venta[], anio: number, mes: number): Venta[] {
   const prefijo = `${anio}-${String(mes).padStart(2, '0')}`;
-  return ventas.filter((v) => v.fecha.startsWith(prefijo));
+  return ventas.filter((v) => extraerFechaVzla(v.fecha).startsWith(prefijo));
 }
 
 export function resumenPorMes(ventas: Venta[], anio: number, mes: number) {
@@ -122,7 +134,7 @@ export function resumenPorMes(ventas: Venta[], anio: number, mes: number) {
   const metodoCount: Record<string, number> = {};
   const prefijo = `${anio}-${String(mes).padStart(2, '0')}`;
   for (const v of ventas) {
-    if (v.fecha.startsWith(prefijo)) {
+    if (extraerFechaVzla(v.fecha).startsWith(prefijo)) {
       filtradas.push(v);
       totalUSD += v.totalUSD;
       totalBs += v.totalBs;
