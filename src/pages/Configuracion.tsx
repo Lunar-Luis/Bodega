@@ -3,6 +3,8 @@ import { Producto, Config, Venta, HistorialEntry } from '../types';
 import { formatearFecha, formatearUSD, formatearBs, ahoraVenezuela } from '../utils/calculos';
 import { useStorageQuota } from '../hooks/useStorageQuota';
 import { comprimirImagen } from '../utils/imagenes';
+import { useAuth } from '../contexts/AuthContext';
+import ConfirmModal from '../components/ConfirmModal';
 
 interface Props {
   config: Config;
@@ -35,6 +37,8 @@ export default function Configuracion({
   historial,
 }: Props) {
   const [tasaInput, setTasaInput] = useState('');
+  const { signOut } = useAuth();
+  const [confirmarCerrar, setConfirmarCerrar] = useState(false);
   const [editandoProducto, setEditandoProducto] = useState<Producto | null>(null);
   const [nuevoNombre, setNuevoNombre] = useState('');
   const [nuevoPrecioUSD, setNuevoPrecioUSD] = useState('');
@@ -135,7 +139,7 @@ export default function Configuracion({
           />
           <button
             onClick={manejarTasa}
-            className="bg-primary text-white font-bold px-5 rounded-xl min-h-touch active:bg-primaryDark active:scale-95 transition-all text-sm whitespace-nowrap shadow-sm"
+            className="bg-primary text-white font-bold px-5 rounded-xl min-h-12 active:bg-primaryDark active:scale-95 transition-all text-sm whitespace-nowrap shadow-sm"
           >
             Guardar
           </button>
@@ -235,11 +239,11 @@ export default function Configuracion({
                   setNuevoNombre(''); setNuevoPrecioUSD(''); setNuevoPrecioBs(''); setPreviewImg(null); setMostrarFormulario(false);
                 }}
                 disabled={!nuevoNombre.trim() || !(parseFloat(nuevoPrecioUSD) > 0)}
-                className="bg-primary text-white font-bold py-3 rounded-xl min-h-touch active:bg-primaryDark active:scale-[0.97] transition-all disabled:opacity-50 w-full text-center shadow-sm flex-[2] text-sm"
+                className="bg-primary text-white font-bold py-3 rounded-xl min-h-12 active:bg-primaryDark active:scale-[0.97] transition-all disabled:opacity-50 w-full text-center shadow-sm flex-[2] text-sm"
               >
                 Guardar Producto
               </button>
-              <button onClick={() => { setMostrarFormulario(false); setNuevoPrecioBs(''); setPreviewImg(null); }} className="bg-slate-200 text-slate-700 font-bold py-3 rounded-xl min-h-touch active:bg-slate-300 active:scale-[0.97] transition-all w-full text-center flex-1 text-sm">
+              <button onClick={() => { setMostrarFormulario(false); setNuevoPrecioBs(''); setPreviewImg(null); }} className="bg-slate-200 text-slate-700 font-bold py-3 rounded-xl min-h-12 active:bg-slate-300 active:scale-[0.97] transition-all w-full text-center flex-1 text-sm">
                 Cancelar
               </button>
             </div>
@@ -315,13 +319,13 @@ export default function Configuracion({
                 </div>
               </div>
               <div className="flex gap-2 items-center">
-                <button onClick={() => editFileInputRef.current?.click()} className="bg-slate-200 text-slate-700 font-bold py-3 rounded-xl min-h-touch active:bg-slate-300 active:scale-[0.97] transition-all text-xs flex-1 text-center" disabled={comprimiendo}>{comprimiendo ? 'Comprimiendo...' : 'Cambiar foto'}</button>
+                <button onClick={() => editFileInputRef.current?.click()} className="bg-slate-200 text-slate-700 font-bold py-3 rounded-xl min-h-12 active:bg-slate-300 active:scale-[0.97] transition-all text-xs flex-1 text-center" disabled={comprimiendo}>{comprimiendo ? 'Comprimiendo...' : 'Cambiar foto'}</button>
                 {editandoProducto.imagen && <button onClick={() => setEditandoProducto({ ...editandoProducto, imagen: '' })} className="text-xs text-slate-400 active:text-slate-600 font-medium">Quitar</button>}
               </div>
             </div>
             <div className="flex gap-2 mt-4">
-              <button onClick={() => setEditandoProducto(null)} className="bg-slate-200 text-slate-700 font-bold py-3 rounded-xl min-h-touch active:bg-slate-300 active:scale-[0.97] transition-all w-full text-center flex-1">Cancelar</button>
-              <button onClick={() => { onActualizarProducto(editandoProducto); setEditandoProducto(null); }} className="bg-primary text-white font-bold py-3 rounded-xl min-h-touch active:bg-primaryDark active:scale-[0.97] transition-all w-full text-center shadow-sm flex-[2]">Guardar</button>
+              <button onClick={() => setEditandoProducto(null)} className="bg-slate-200 text-slate-700 font-bold py-3 rounded-xl min-h-12 active:bg-slate-300 active:scale-[0.97] transition-all w-full text-center flex-1">Cancelar</button>
+              <button onClick={() => { onActualizarProducto(editandoProducto); setEditandoProducto(null); }} className="bg-primary text-white font-bold py-3 rounded-xl min-h-12 active:bg-primaryDark active:scale-[0.97] transition-all w-full text-center shadow-sm flex-[2]">Guardar</button>
             </div>
           </div>
         </div>
@@ -347,6 +351,25 @@ export default function Configuracion({
       <div className="text-center">
         <button onClick={descargarRespaldo} className="text-xs text-slate-400 py-2 active:text-slate-600">Descargar configuracion</button>
       </div>
+
+      <div className="text-center pb-8">
+        <button
+          onClick={() => setConfirmarCerrar(true)}
+          className="btn-secondary text-xs py-2.5 px-8"
+        >
+          Cerrar Sesion
+        </button>
+      </div>
+
+      <ConfirmModal
+        open={confirmarCerrar}
+        title="Cerrar Sesion"
+        message="Se cerrara tu sesion. Deberas volver a iniciar sesion para acceder."
+        confirmText="Cerrar Sesion"
+        cancelText="Cancelar"
+        onConfirm={() => { setConfirmarCerrar(false); signOut(); }}
+        onCancel={() => setConfirmarCerrar(false)}
+      />
     </div>
   );
 }

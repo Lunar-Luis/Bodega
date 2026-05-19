@@ -1,13 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Venta } from '../types';
-import { dbGetAllVentas, dbAddVenta } from '../utils/db';
+import { dexieDb } from '../lib/dexie-db';
+import { pushVenta } from '../lib/sync';
 
 export function useVentas(): [Venta[], (venta: Venta) => Promise<void>, boolean] {
   const [ventas, setVentas] = useState<Venta[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    dbGetAllVentas()
+    dexieDb.ventas
+      .toArray()
       .then((v) => {
         v.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
         setVentas(v);
@@ -17,8 +19,9 @@ export function useVentas(): [Venta[], (venta: Venta) => Promise<void>, boolean]
   }, []);
 
   const addVenta = useCallback((venta: Venta) => {
-    return dbAddVenta(venta).then(() => {
+    return dexieDb.ventas.add(venta).then(() => {
       setVentas((prev) => [venta, ...prev]);
+      pushVenta(venta);
     });
   }, []);
 

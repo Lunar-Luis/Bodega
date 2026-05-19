@@ -3,11 +3,14 @@ import { Producto, Venta, Config, Pagina, CarritoItem, HistorialEntry } from './
 import { usePersistedState } from './hooks/usePersistedState';
 import { useVentas } from './hooks/useVentas';
 import { buscarProducto, ahoraVenezuela } from './utils/calculos';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { fullSync, setupSyncListener } from './lib/sync';
 import NavegacionInferior from './components/NavegacionInferior';
 import NuevaVenta from './pages/NuevaVenta';
 import VentasDelDia from './pages/VentasDelDia';
 import Configuracion from './pages/Configuracion';
 import GananciasMensuales from './pages/GananciasMensuales';
+import Login from './pages/Login';
 
 function svgImg(n: string, color: string): string {
   const l = n.charAt(0).toUpperCase();
@@ -44,7 +47,36 @@ function limpiarHistorial(entries: HistorialEntry[]): HistorialEntry[] {
   return filtrados.slice(-MAX_HISTORIAL);
 }
 
-export default function App() {
+export default function AppWrapper() {
+  return (
+    <AuthProvider>
+      <AppInner />
+    </AuthProvider>
+  );
+}
+
+function AppInner() {
+  const { user, loading: authLoading } = useAuth();
+
+  if (authLoading) {
+    return (
+      <div className="max-w-lg mx-auto min-h-screen bg-fondo flex items-center justify-center">
+        <div className="text-center">
+          <div className="spinner mx-auto mb-4" style={{ width: 24, height: 24, borderWidth: 3 }} />
+          <p className="text-slate-400 text-sm font-medium">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Login />;
+  }
+
+  return <AppAuthed />;
+}
+
+function AppAuthed() {
   const [pagina, setPagina] = useState<Pagina>('venta');
   const [ventas, addVenta, ventasLoaded] = useVentas();
   const [config, setConfig, configLoaded] = usePersistedState<Config>('bodegaonline_config', CONFIG_INICIAL);
@@ -52,8 +84,30 @@ export default function App() {
   const [historial, setHistorial, historialLoaded] = usePersistedState<HistorialEntry[]>('bodegaonline_historial', []);
   const [carrito, setCarrito] = useState<CarritoItem[]>([]);
   const [bannerRespaldo, setBannerRespaldo] = useState(false);
-
   const todoCargado = ventasLoaded && configLoaded && productosLoaded && historialLoaded;
+
+  useEffect(() => {
+    fullSync();
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(fullSync, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const handleOnline = () => fullSync();
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, []);
+
+  useEffect(() => {
+    return setupSyncListener();
+  }, []);
+
+  useEffect(() => {
+    indexedDB.deleteDatabase('BodegaOnlineDB');
+  }, []);
 
   const migroProductos = useRef(false);
 

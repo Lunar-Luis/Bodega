@@ -88,7 +88,7 @@ export default function ModalPago({ items, productos, onConfirmar, onCerrar }: P
                 <button
                   key={m.id}
                   onClick={() => { setMetodo(m.id); setError(''); }}
-                  className={`py-3 px-2 rounded-xl text-sm font-medium transition-all min-h-touch ${
+                  className={`py-3 px-2 rounded-xl text-sm font-medium transition-all min-h-12 ${
                     metodo === m.id
                       ? 'bg-primary text-white shadow-sm'
                       : 'bg-slate-100 text-slate-600 active:bg-slate-200'

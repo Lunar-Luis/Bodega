@@ -26,13 +26,13 @@ export default function CarritoFlotante({ items, productos, onAbrirPago, onVacia
           <div className="flex gap-2">
             <button
               onClick={onVaciar}
-              className="text-sm px-4 py-2.5 rounded-xl bg-slate-100 text-slate-600 font-semibold active:bg-slate-200 active:scale-95 transition-all min-h-touch"
+              className="text-sm px-4 py-2.5 rounded-xl bg-slate-100 text-slate-600 font-semibold active:bg-slate-200 active:scale-95 transition-all min-h-12"
             >
               Vaciar
             </button>
             <button
               onClick={onAbrirPago}
-              className="text-sm px-6 py-2.5 rounded-xl font-bold active:scale-95 transition-all shadow-sm min-h-touch"
+              className="text-sm px-6 py-2.5 rounded-xl font-bold active:scale-95 transition-all shadow-sm min-h-12"
               style={{ background: '#7C3AED', color: 'white' }}
             >
               PAGAR

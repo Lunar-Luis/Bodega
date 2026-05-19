@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect, useCallback, useRef } from 'react';
-import { dbGetItem, dbSetItem } from '../utils/db';
+import { dexieDb } from '../lib/dexie-db';
+import { pushKeyValue } from '../lib/sync';
 
 export function usePersistedState<T>(
   key: string,
@@ -16,9 +17,9 @@ export function usePersistedState<T>(
 
     (async () => {
       try {
-        const val = await dbGetItem(key);
-        if (val !== null) {
-          setStoredValue(JSON.parse(val));
+        const entry = await dexieDb.keyvalue.get(key);
+        if (entry) {
+          setStoredValue(JSON.parse(entry.value));
           setLoaded(true);
           return;
         }
@@ -29,7 +30,7 @@ export function usePersistedState<T>(
         if (item) {
           const parsed = JSON.parse(item);
           setStoredValue(parsed);
-          await dbSetItem(key, item).catch(() => {});
+          await dexieDb.keyvalue.put({ key, value: item, updatedAt: Date.now() }).catch(() => {});
           localStorage.removeItem(key);
         }
       } catch {}
@@ -43,7 +44,8 @@ export function usePersistedState<T>(
       return;
     }
     const serialized = JSON.stringify(storedValue);
-    dbSetItem(key, serialized).catch(console.error);
+    dexieDb.keyvalue.put({ key, value: serialized, updatedAt: Date.now() }).catch(console.error);
+    pushKeyValue(key);
   }, [key, storedValue]);
 
   const setValue = useCallback(

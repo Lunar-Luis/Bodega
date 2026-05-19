@@ -76,7 +76,7 @@ export default function NavegacionInferior({ actual, onCambiar }: Props) {
             <button
               key={item.id}
               onClick={() => onCambiar(item.id)}
-              className={`flex flex-col items-center justify-center gap-0.5 min-w-0 flex-1 min-h-touch px-1 rounded-xl transition-all ${
+              className={`flex flex-col items-center justify-center gap-0.5 min-w-0 flex-1 min-h-12 px-1 rounded-xl transition-all ${
                 activo ? 'text-primary' : 'text-slate-400'
               }`}
             >
