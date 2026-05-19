@@ -1,9 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Producto, Config, Venta, HistorialEntry } from '../types';
 import { formatearFecha, formatearUSD, formatearBs, ahoraVenezuela } from '../utils/calculos';
-import { useStorageQuota } from '../hooks/useStorageQuota';
 import { comprimirImagen } from '../utils/imagenes';
 import { useAuth } from '../contexts/AuthContext';
+import { dexieDb } from '../lib/dexie-db';
 import ConfirmModal from '../components/ConfirmModal';
 
 interface Props {
@@ -16,15 +16,6 @@ interface Props {
   onEliminarProducto: (id: number) => void;
   historial: HistorialEntry[];
 }
-
-function bytesParaHumanos(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-const UMBRAL_AMARILLO = 5 * 1024 * 1024;
-const UMBRAL_ROJO = 8 * 1024 * 1024;
 
 export default function Configuracion({
   config,
@@ -49,8 +40,6 @@ export default function Configuracion({
   const [previewImg, setPreviewImg] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editFileInputRef = useRef<HTMLInputElement>(null);
-  const usado = useStorageQuota();
-  const soportado = 'storage' in navigator && 'estimate' in navigator.storage;
 
   useEffect(() => {
     if (config.tasaDolar > 0) {
@@ -58,8 +47,11 @@ export default function Configuracion({
     }
   }, [config.tasaDolar]);
 
-  const porcentaje = Math.min((usado / (10 * 1024 * 1024)) * 100, 100);
-  const colorBarra = usado >= UMBRAL_ROJO ? '#EF4444' : usado >= UMBRAL_AMARILLO ? '#F59E0B' : '#22C55E';
+  const limpiarCache = useCallback(async () => {
+    if (!window.confirm('Limpiar cache local? Los datos se descargaran de nuevo desde la nube.')) return;
+    await dexieDb.delete();
+    window.location.reload();
+  }, []);
 
   const manejarTasa = useCallback(() => {
     const t = parseFloat(tasaInput);
@@ -110,21 +102,6 @@ export default function Configuracion({
         <h1 className="text-xl font-bold text-white">Configuracion</h1>
         <p className="text-xs text-white/70 mt-0.5">Administra tu negocio</p>
       </div>
-
-      {soportado && usado > 0 && (
-        <div className="card">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-slate-700">Almacenamiento</p>
-            <p className="text-xs text-slate-400">{bytesParaHumanos(usado)}</p>
-          </div>
-          <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all duration-500"
-              style={{ width: `${porcentaje}%`, backgroundColor: colorBarra }}
-            />
-          </div>
-        </div>
-      )}
 
       <div className="card">
         <p className="text-sm font-medium text-slate-700 mb-2">Tasa del Dolar (Bs.)</p>
@@ -350,6 +327,10 @@ export default function Configuracion({
 
       <div className="text-center">
         <button onClick={descargarRespaldo} className="text-xs text-slate-400 py-2 active:text-slate-600">Descargar configuracion</button>
+      </div>
+
+      <div className="text-center">
+        <button onClick={limpiarCache} className="text-xs text-slate-400 py-2 active:text-slate-600">Limpiar cache local</button>
       </div>
 
       <div className="text-center pb-8">

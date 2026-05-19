@@ -12,26 +12,7 @@ import Configuracion from './pages/Configuracion';
 import GananciasMensuales from './pages/GananciasMensuales';
 import Login from './pages/Login';
 
-function svgImg(n: string, color: string): string {
-  const l = n.charAt(0).toUpperCase();
-  return `data:image/svg+xml,${encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80"><rect width="80" height="80" rx="14" fill="${color}"/><text x="40" y="40" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="28" font-weight="bold" fill="white">${l}</text></svg>`
-  )}`;
-}
-
-const C = [
-  '#3B82F6','#10B981','#F59E0B','#EF4444','#8B5CF6',
-  '#EC4899','#14B8A6','#F97316','#6366F1','#84CC16',
-  '#06B6D4','#D946EF','#22C55E','#EAB308','#A855F7',
-  '#0EA5E9','#F43F5E','#2DD4BF','#FB923C','#818CF8',
-];
-
-const PRODUCTOS_INICIALES: Producto[] = [
-  { id: 1, nombre: 'Recarga Botellon 5L', precioUSD: 0.50, precioBs: 0, activo: true, imagen: svgImg('Recarga Botellon 5L', C[0]) },
-  { id: 2, nombre: 'Recarga Botellon 8L', precioUSD: 0.75, precioBs: 0, activo: true, imagen: svgImg('Recarga Botellon 8L', C[0]) },
-  { id: 3, nombre: 'Botellon Sellado 5L', precioUSD: 1.50, precioBs: 0, activo: true, imagen: svgImg('Botellon Sellado 5L', C[1]) },
-  { id: 4, nombre: 'Botellon Sellado 8L', precioUSD: 2.00, precioBs: 0, activo: true, imagen: svgImg('Botellon Sellado 8L', C[1]) },
-];
+const PRODUCTOS_INICIALES: Producto[] = [];
 
 const CONFIG_INICIAL: Config = {
   tasaDolar: 0,

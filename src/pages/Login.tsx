@@ -20,35 +20,25 @@ function traducirError(msg: string): string {
 }
 
 export default function Login() {
-  const { signIn, signUp } = useAuth();
+  const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [modo, setModo] = useState<'login' | 'registro'>('login');
   const [error, setError] = useState('');
-  const [exito, setExito] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
-    setExito('');
     setLoading(true);
 
-    const fn = modo === 'login' ? signIn : signUp;
-    const errMsg = await fn(email, password);
-
-    if (errMsg) {
-      setError(traducirError(errMsg));
-    } else if (modo === 'registro') {
-      setExito('Cuenta creada correctamente');
-    }
+    const errMsg = await signIn(email, password);
+    if (errMsg) setError(traducirError(errMsg));
     setLoading(false);
   };
 
   return (
     <div className="max-w-lg mx-auto min-h-screen bg-fondo flex items-center justify-center p-6">
       <ToastNotification message={error} type="error" visible={!!error} onClose={() => setError('')} />
-      <ToastNotification message={exito} type="success" visible={!!exito} onClose={() => setExito('')} />
 
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
@@ -62,9 +52,7 @@ export default function Login() {
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-slate-200 p-6 space-y-4">
-          <h2 className="text-base font-semibold text-slate-700 text-center">
-            {modo === 'login' ? 'Iniciar Sesion' : 'Crear Cuenta'}
-          </h2>
+          <h2 className="text-base font-semibold text-slate-700 text-center">Iniciar Sesion</h2>
 
           <div>
             <label className="block text-sm font-medium text-slate-600 mb-1">Correo electronico</label>
@@ -96,24 +84,8 @@ export default function Login() {
             disabled={loading}
             className="btn-primary w-full py-2.5 text-sm font-semibold disabled:opacity-50"
           >
-            {loading ? 'Procesando...' : modo === 'login' ? 'Entrar' : 'Crear Cuenta'}
+            {loading ? 'Procesando...' : 'Entrar'}
           </button>
-
-          <p className="text-sm text-center text-slate-400">
-            {modo === 'login' ? (
-              <>No tienes cuenta?{' '}
-                <button type="button" onClick={() => { setModo('registro'); setError(''); }} className="text-primary font-medium hover:underline">
-                  Registrarse
-                </button>
-              </>
-            ) : (
-              <>Ya tienes cuenta?{' '}
-                <button type="button" onClick={() => { setModo('login'); setError(''); }} className="text-primary font-medium hover:underline">
-                  Iniciar Sesion
-                </button>
-              </>
-            )}
-          </p>
         </form>
       </div>
     </div>
