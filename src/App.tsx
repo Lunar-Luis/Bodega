@@ -1,32 +1,17 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { Producto, Venta, Config, Pagina, CarritoItem, HistorialEntry } from './types';
-import { usePersistedState } from './hooks/usePersistedState';
-import { useVentas } from './hooks/useVentas';
-import { buscarProducto, ahoraVenezuela } from './utils/calculos';
+﻿import { useState, useCallback, useEffect, useRef } from 'react';
+import { Producto, Pagina, CarritoItem, Venta } from './types';
+import { useProductos } from './hooks/useProductos';
+import { useVentasDirect } from './hooks/useVentasDirect';
+import { useConfig } from './hooks/useConfig';
+import { useHistorial } from './hooks/useHistorial';
+import { buscarProducto } from './utils/calculos';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { fullSync, setupSyncListener } from './lib/sync';
 import NavegacionInferior from './components/NavegacionInferior';
 import NuevaVenta from './pages/NuevaVenta';
 import VentasDelDia from './pages/VentasDelDia';
 import Configuracion from './pages/Configuracion';
 import GananciasMensuales from './pages/GananciasMensuales';
 import Login from './pages/Login';
-
-const PRODUCTOS_INICIALES: Producto[] = [];
-
-const CONFIG_INICIAL: Config = {
-  tasaDolar: 0,
-  ultimaActualizacion: '',
-};
-
-const MAX_HISTORIAL = 100;
-const DIAS_HISTORIAL = 30;
-
-function limpiarHistorial(entries: HistorialEntry[]): HistorialEntry[] {
-  const corte = Date.now() - DIAS_HISTORIAL * 24 * 60 * 60 * 1000;
-  const filtrados = entries.filter((h) => new Date(h.fecha).getTime() > corte);
-  return filtrados.slice(-MAX_HISTORIAL);
-}
 
 export default function AppWrapper() {
   return (
@@ -59,36 +44,12 @@ function AppInner() {
 
 function AppAuthed() {
   const [pagina, setPagina] = useState<Pagina>('venta');
-  const [ventas, addVenta, ventasLoaded] = useVentas();
-  const [config, setConfig, configLoaded] = usePersistedState<Config>('bodegaonline_config', CONFIG_INICIAL);
-  const [productos, setProductos, productosLoaded] = usePersistedState<Producto[]>('bodegaonline_productos', PRODUCTOS_INICIALES);
-  const [historial, setHistorial, historialLoaded] = usePersistedState<HistorialEntry[]>('bodegaonline_historial', []);
+  const [ventas, addVenta, ventasLoaded] = useVentasDirect();
+  const [config, actualizarTasa, configLoaded] = useConfig();
+  const [productos, agregarProducto, actualizarProducto, eliminarProducto, productosLoaded] = useProductos();
+  const [historial, agregarHistorial, historialLoaded] = useHistorial();
   const [carrito, setCarrito] = useState<CarritoItem[]>([]);
-  const [bannerRespaldo, setBannerRespaldo] = useState(false);
   const todoCargado = ventasLoaded && configLoaded && productosLoaded && historialLoaded;
-
-  useEffect(() => {
-    fullSync();
-  }, []);
-
-  useEffect(() => {
-    const interval = setInterval(fullSync, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    const handleOnline = () => fullSync();
-    window.addEventListener('online', handleOnline);
-    return () => window.removeEventListener('online', handleOnline);
-  }, []);
-
-  useEffect(() => {
-    return setupSyncListener();
-  }, []);
-
-  useEffect(() => {
-    indexedDB.deleteDatabase('BodegaOnlineDB');
-  }, []);
 
   const migroProductos = useRef(false);
 
@@ -104,22 +65,10 @@ function AppAuthed() {
       return p;
     });
     if (changed) {
-      setProductos(migrados);
+      migrados.forEach((p) => actualizarProducto(p));
     }
     migroProductos.current = true;
-  }, [productosLoaded, config.tasaDolar]);
-
-  useEffect(() => {
-    if (!historialLoaded) return;
-    setHistorial((prev) => limpiarHistorial(prev));
-  }, [historialLoaded]);
-
-  const agregarHistorial = useCallback((accion: string) => {
-    setHistorial((prev) => {
-      const updated = [...prev, { fecha: ahoraVenezuela(), accion }];
-      return limpiarHistorial(updated);
-    });
-  }, [setHistorial]);
+  }, [productosLoaded, config.tasaDolar, productos, actualizarProducto]);
 
   const incrementar = useCallback((producto: Producto) => {
     setCarrito((prev) => {
@@ -149,63 +98,38 @@ function AppAuthed() {
   }, []);
 
   const handleGuardarVenta = useCallback(async (venta: Venta) => {
-    await addVenta(venta);
+    await addVenta(venta, productos);
     const desc = venta.items.map((i) => {
       const p = buscarProducto(productos, i.productoId);
-      return `${p?.nombre || '?'} x${i.cantidad}`;
+      return (p?.nombre || '?') + ' x' + i.cantidad;
     }).join(', ');
-    agregarHistorial(`Venta registrada: ${desc}`);
+    agregarHistorial('Venta registrada: ' + desc);
   }, [addVenta, agregarHistorial, productos]);
 
   const handleActualizarTasa = useCallback((tasa: number) => {
-    setConfig((prev) => ({ ...prev, tasaDolar: tasa, ultimaActualizacion: ahoraVenezuela() }));
-    agregarHistorial(`Tasa actualizada: ${tasa}`);
-  }, [setConfig, agregarHistorial]);
+    actualizarTasa(tasa);
+    agregarHistorial('Tasa actualizada: ' + tasa);
+  }, [actualizarTasa, agregarHistorial]);
 
   const handleActualizarProducto = useCallback((producto: Producto) => {
-    setProductos((prev) => prev.map((p) => (p.id === producto.id ? producto : p)));
-    agregarHistorial(`Producto actualizado: ${producto.nombre}`);
-  }, [setProductos, agregarHistorial]);
+    actualizarProducto(producto);
+    agregarHistorial('Producto actualizado: ' + producto.nombre);
+  }, [actualizarProducto, agregarHistorial]);
 
   const handleAgregarProducto = useCallback((producto: Producto) => {
-    setProductos((prev) => [...prev, producto]);
-    agregarHistorial(`Producto agregado: ${producto.nombre}`);
-  }, [setProductos, agregarHistorial]);
+    agregarProducto(producto);
+    agregarHistorial('Producto agregado: ' + producto.nombre);
+  }, [agregarProducto, agregarHistorial]);
 
   const handleEliminarProducto = useCallback((id: number) => {
     const p = productos.find((pr) => pr.id === id);
-    setProductos((prev) => prev.filter((pr) => pr.id !== id));
-    if (p) agregarHistorial(`Producto eliminado: ${p.nombre}`);
-  }, [setProductos, productos, agregarHistorial]);
+    eliminarProducto(id);
+    if (p) agregarHistorial('Producto eliminado: ' + p.nombre);
+  }, [eliminarProducto, productos, agregarHistorial]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [pagina]);
-
-  useEffect(() => {
-    const ultimo = localStorage.getItem('bodegaonline_ultimo_respaldo');
-    if (ultimo) {
-      const dias = Math.floor((Date.now() - new Date(ultimo).getTime()) / (1000 * 60 * 60 * 24));
-      setBannerRespaldo(dias >= 7);
-    }
-  }, [ventas]);
-
-  const handleDescargarRespaldo = useCallback(() => {
-    if (window.confirm('Descargar respaldo de datos antes de continuar?')) {
-      const data = { ventas, config, productos };
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `respaldo-bodegaonline-${ahoraVenezuela().split('T')[0]}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      localStorage.setItem('bodegaonline_ultimo_respaldo', ahoraVenezuela());
-      setBannerRespaldo(false);
-    }
-  }, [ventas, config, productos]);
 
   if (!todoCargado) {
     return (
@@ -220,13 +144,6 @@ function AppAuthed() {
 
   return (
     <div className="max-w-lg mx-auto min-h-screen bg-fondo">
-      {bannerRespaldo && pagina !== 'configuracion' && (
-        <div className="bg-accent/20 border-b border-accent/30 px-4 py-2.5 text-sm text-slate-700 flex items-center justify-between gap-2">
-          <span>Han pasado mas de 7 dias sin respaldo</span>
-          <button onClick={handleDescargarRespaldo} className="text-xs font-bold bg-primary text-white px-3 py-1.5 rounded-lg active:bg-primaryDark">Respaldar</button>
-        </div>
-      )}
-
       {pagina === 'venta' && (
         <NuevaVenta
           productos={productos}

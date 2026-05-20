@@ -12,19 +12,23 @@ export interface CarritoItem {
   cantidad: number;
 }
 
+export interface VentaItem {
+  id: number;
+  ventaId: string;
+  productoId: number;
+  cantidad: number;
+  precioUSD: number;
+  precioBs: number;
+}
+
 export interface Venta {
   id: string;
   fecha: string;
   items: CarritoItem[];
   totalUSD: number;
   totalBs: number;
-  metodoPago: 'pago_movil' | 'efectivo_bs' | 'efectivo_usd';
+  metodoPago: MetodoPago;
   referencia?: string;
-}
-
-export interface HistorialEntry {
-  fecha: string;
-  accion: string;
 }
 
 export interface Config {
