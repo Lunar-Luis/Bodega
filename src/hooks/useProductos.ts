@@ -9,6 +9,7 @@ function fromDB(raw: any): Producto {
     nombre: raw.nombre,
     precioUSD: raw.precio_usd,
     precioBs: raw.precio_bs,
+    tipoPrecio: raw.tipo_precio ?? 'usd',
     imagen: raw.imagen ?? undefined,
     activo: raw.activo,
   };
@@ -20,6 +21,7 @@ function toDB(p: Producto, userId: string): any {
     nombre: p.nombre,
     precio_usd: p.precioUSD,
     precio_bs: p.precioBs,
+    tipo_precio: p.tipoPrecio,
     imagen: p.imagen ?? null,
     activo: p.activo,
   };

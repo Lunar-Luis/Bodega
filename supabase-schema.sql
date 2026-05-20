@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS productos (
   precio_bs DOUBLE PRECISION NOT NULL DEFAULT 0,
   imagen TEXT,
   activo BOOLEAN NOT NULL DEFAULT true,
+  tipo_precio TEXT NOT NULL DEFAULT 'usd',
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

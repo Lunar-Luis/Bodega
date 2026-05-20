@@ -118,15 +118,32 @@ function AppAuthed() {
     }
   }, [addVenta, agregarHistorial, productos, mostrarToast]);
 
+  const recalcularPrecios = useCallback(async (tasa: number) => {
+    for (const p of productos) {
+      if (p.tipoPrecio === 'usd') {
+        const nuevoBs = Math.round(p.precioUSD * tasa * 100) / 100;
+        if (nuevoBs !== p.precioBs) {
+          await actualizarProducto({ ...p, precioBs: nuevoBs });
+        }
+      } else {
+        const nuevoUsd = Math.round((p.precioBs / tasa) * 100) / 100;
+        if (nuevoUsd !== p.precioUSD) {
+          await actualizarProducto({ ...p, precioUSD: nuevoUsd });
+        }
+      }
+    }
+  }, [productos, actualizarProducto]);
+
   const handleActualizarTasa = useCallback(async (tasa: number) => {
     try {
       await actualizarTasa(tasa);
+      await recalcularPrecios(tasa);
       agregarHistorial('Tasa actualizada: ' + tasa);
       mostrarToast('Tasa actualizada correctamente', 'success');
     } catch {
       mostrarToast('Error al actualizar la tasa', 'error');
     }
-  }, [actualizarTasa, agregarHistorial, mostrarToast]);
+  }, [actualizarTasa, recalcularPrecios, agregarHistorial, mostrarToast]);
 
   const handleActualizarProducto = useCallback(async (producto: Producto) => {
     try {

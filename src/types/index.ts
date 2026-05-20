@@ -3,6 +3,7 @@ export interface Producto {
   nombre: string;
   precioUSD: number;
   precioBs: number;
+  tipoPrecio: 'usd' | 'bs';
   imagen?: string;
   activo: boolean;
 }
