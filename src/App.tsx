@@ -1,4 +1,4 @@
-﻿import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Producto, Pagina, CarritoItem, Venta } from './types';
 import { useProductos } from './hooks/useProductos';
 import { useVentasDirect } from './hooks/useVentasDirect';
@@ -12,6 +12,7 @@ import VentasDelDia from './pages/VentasDelDia';
 import Configuracion from './pages/Configuracion';
 import GananciasMensuales from './pages/GananciasMensuales';
 import Login from './pages/Login';
+import ToastNotification from './components/ToastNotification';
 
 export default function AppWrapper() {
   return (
@@ -50,6 +51,12 @@ function AppAuthed() {
   const [historial, agregarHistorial, historialLoaded] = useHistorial();
   const [carrito, setCarrito] = useState<CarritoItem[]>([]);
   const todoCargado = ventasLoaded && configLoaded && productosLoaded && historialLoaded;
+
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error'; key: number } | null>(null);
+  const mostrarToast = useCallback((message: string, type: 'success' | 'error') => {
+    setToast({ message, type, key: Date.now() });
+  }, []);
+  const cerrarToast = useCallback(() => setToast(null), []);
 
   const migroProductos = useRef(false);
 
@@ -98,34 +105,59 @@ function AppAuthed() {
   }, []);
 
   const handleGuardarVenta = useCallback(async (venta: Venta) => {
-    await addVenta(venta, productos);
-    const desc = venta.items.map((i) => {
-      const p = buscarProducto(productos, i.productoId);
-      return (p?.nombre || '?') + ' x' + i.cantidad;
-    }).join(', ');
-    agregarHistorial('Venta registrada: ' + desc);
-  }, [addVenta, agregarHistorial, productos]);
+    try {
+      await addVenta(venta, productos);
+      const desc = venta.items.map((i) => {
+        const p = buscarProducto(productos, i.productoId);
+        return (p?.nombre || '?') + ' x' + i.cantidad;
+      }).join(', ');
+      agregarHistorial('Venta registrada: ' + desc);
+      mostrarToast('Venta registrada correctamente', 'success');
+    } catch {
+      mostrarToast('Error al registrar la venta', 'error');
+    }
+  }, [addVenta, agregarHistorial, productos, mostrarToast]);
 
-  const handleActualizarTasa = useCallback((tasa: number) => {
-    actualizarTasa(tasa);
-    agregarHistorial('Tasa actualizada: ' + tasa);
-  }, [actualizarTasa, agregarHistorial]);
+  const handleActualizarTasa = useCallback(async (tasa: number) => {
+    try {
+      await actualizarTasa(tasa);
+      agregarHistorial('Tasa actualizada: ' + tasa);
+      mostrarToast('Tasa actualizada correctamente', 'success');
+    } catch {
+      mostrarToast('Error al actualizar la tasa', 'error');
+    }
+  }, [actualizarTasa, agregarHistorial, mostrarToast]);
 
-  const handleActualizarProducto = useCallback((producto: Producto) => {
-    actualizarProducto(producto);
-    agregarHistorial('Producto actualizado: ' + producto.nombre);
-  }, [actualizarProducto, agregarHistorial]);
+  const handleActualizarProducto = useCallback(async (producto: Producto) => {
+    try {
+      await actualizarProducto(producto);
+      agregarHistorial('Producto actualizado: ' + producto.nombre);
+      mostrarToast('Producto actualizado correctamente', 'success');
+    } catch {
+      mostrarToast('Error al actualizar producto', 'error');
+    }
+  }, [actualizarProducto, agregarHistorial, mostrarToast]);
 
-  const handleAgregarProducto = useCallback((producto: Producto) => {
-    agregarProducto(producto);
-    agregarHistorial('Producto agregado: ' + producto.nombre);
-  }, [agregarProducto, agregarHistorial]);
+  const handleAgregarProducto = useCallback(async (producto: Producto) => {
+    try {
+      await agregarProducto(producto);
+      agregarHistorial('Producto agregado: ' + producto.nombre);
+      mostrarToast('Producto agregado correctamente', 'success');
+    } catch {
+      mostrarToast('Error al agregar producto', 'error');
+    }
+  }, [agregarProducto, agregarHistorial, mostrarToast]);
 
-  const handleEliminarProducto = useCallback((id: number) => {
-    const p = productos.find((pr) => pr.id === id);
-    eliminarProducto(id);
-    if (p) agregarHistorial('Producto eliminado: ' + p.nombre);
-  }, [eliminarProducto, productos, agregarHistorial]);
+  const handleEliminarProducto = useCallback(async (id: number) => {
+    try {
+      const p = productos.find((pr) => pr.id === id);
+      await eliminarProducto(id);
+      if (p) agregarHistorial('Producto eliminado: ' + p.nombre);
+      mostrarToast('Producto eliminado correctamente', 'success');
+    } catch {
+      mostrarToast('Error al eliminar producto', 'error');
+    }
+  }, [eliminarProducto, productos, agregarHistorial, mostrarToast]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -144,6 +176,16 @@ function AppAuthed() {
 
   return (
     <div className="max-w-lg mx-auto min-h-screen bg-fondo">
+      {toast && (
+        <ToastNotification
+          key={toast.key}
+          message={toast.message}
+          type={toast.type}
+          visible={true}
+          onClose={cerrarToast}
+        />
+      )}
+
       {pagina === 'venta' && (
         <NuevaVenta
           productos={productos}

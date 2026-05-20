@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import type { Venta, CarritoItem, Producto } from '../types';
@@ -113,6 +113,8 @@ export function useVentasDirect(): [Venta[], (venta: Venta, productos: Producto[
 
     const { error: iError } = await supabase.from('venta_items').insert(items);
     if (iError) throw iError;
+
+    setVentas((prev) => [venta, ...prev]);
   }, [user]);
 
   return [ventas, addVenta, loaded];

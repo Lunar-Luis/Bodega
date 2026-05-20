@@ -51,12 +51,14 @@ export function useConfig(): [Config, (tasa: number) => Promise<void>, boolean] 
 
   const actualizarTasa = useCallback(async (tasa: number) => {
     if (!user) return;
+    const now = new Date().toISOString();
     const { error } = await supabase.from('config').upsert({
       user_id: user.id,
       tasa_dolar: tasa,
-      ultima_actualizacion: new Date().toISOString(),
+      ultima_actualizacion: now,
     }, { onConflict: 'user_id' });
     if (error) throw error;
+    setConfig({ tasaDolar: tasa, ultimaActualizacion: now });
   }, [user]);
 
   return [config, actualizarTasa, loaded];

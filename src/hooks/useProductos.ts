@@ -16,7 +16,6 @@ function fromDB(raw: any): Producto {
 
 function toDB(p: Producto, userId: string): any {
   return {
-    id: p.id,
     user_id: userId,
     nombre: p.nombre,
     precio_usd: p.precioUSD,
@@ -72,20 +71,27 @@ export function useProductos(): [Producto[], (p: Producto) => Promise<void>, (p:
 
   const agregarProducto = useCallback(async (producto: Producto) => {
     if (!user) return;
-    const { error } = await supabase.from('productos').insert(toDB(producto, user.id));
+    const { data, error } = await supabase.from('productos').insert(toDB(producto, user.id)).select().single();
     if (error) throw error;
+    if (data) {
+      setProductos((prev) => [...prev, fromDB(data)]);
+    }
   }, [user]);
 
   const actualizarProducto = useCallback(async (producto: Producto) => {
     if (!user) return;
-    const { error } = await supabase.from('productos').update(toDB(producto, user.id)).eq('id', producto.id).eq('user_id', user.id);
+    const { data, error } = await supabase.from('productos').update(toDB(producto, user.id)).eq('id', producto.id).eq('user_id', user.id).select().single();
     if (error) throw error;
+    if (data) {
+      setProductos((prev) => prev.map((p) => p.id === data.id ? fromDB(data) : p));
+    }
   }, [user]);
 
   const eliminarProducto = useCallback(async (id: number) => {
     if (!user) return;
     const { error } = await supabase.from('productos').delete().eq('id', id).eq('user_id', user.id);
     if (error) throw error;
+    setProductos((prev) => prev.filter((p) => p.id !== id));
   }, [user]);
 
   return [productos, agregarProducto, actualizarProducto, eliminarProducto, loaded];
